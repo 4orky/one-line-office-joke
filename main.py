@@ -28,9 +28,9 @@ its own output (1-200 characters, a single line, UTF-8) and prints
 the SHA-256 of the file it wrote.
 """
 
-import hashlib
-import os
-import sys
+from hashlib import sha256
+from os import environ, makedirs
+from sys import exit as finish, stderr
 
 # Weights for the five judge criteria, in the judge's priority order:
 # joke, funny, one-line, fresh, clear.
@@ -113,7 +113,7 @@ CANDIDATES = [
 ]
 
 
-def score(text, ratings):
+def rate(text, ratings):
     """Weighted total for one candidate's five criterion ratings.
 
     The freshness rating is adjusted first: each tired-trope phrase
@@ -127,7 +127,7 @@ def score(text, ratings):
     return sum(w * r for w, r in zip(WEIGHTS, adjusted))
 
 
-def pick(candidates):
+def choose(candidates):
     """Return (index, text, total) of the best candidate.
 
     Deterministic: strictly greater totals replace the leader, so the
@@ -135,13 +135,13 @@ def pick(candidates):
     """
     best_index, best_text, best_total = -1, "", -1
     for index, (text, ratings) in enumerate(candidates):
-        total = score(text, ratings)
+        total = rate(text, ratings)
         if total > best_total:
             best_index, best_text, best_total = index, text, total
     return best_index, best_text, best_total
 
 
-def self_check(text):
+def gate(text):
     """Gate the chosen line the way the sealed scorer does."""
     if not (1 <= len(text) <= 200):
         return "length %d is outside 1..200 characters" % len(text)
@@ -152,25 +152,24 @@ def self_check(text):
     return None
 
 
-def main():
-    index, text, total = pick(CANDIDATES)
-    problem = self_check(text)
+def run():
+    index, text, total = choose(CANDIDATES)
+    problem = gate(text)
     if problem is not None:
-        print("self-check failed: %s" % problem, file=sys.stderr)
+        print("self-check failed: %s" % problem, file=stderr)
         return 1
 
-    out_path = os.environ.get("OUTPUT_PATH", "/output/entry.txt")
-    out_dir = os.path.dirname(out_path)
+    out_path = environ.get("OUTPUT_PATH", "/output/entry.txt")
+    out_dir = out_path.rsplit("/", 1)[0] if "/" in out_path else ""
     if out_dir:
-        os.makedirs(out_dir, exist_ok=True)
+        makedirs(out_dir, exist_ok=True)
     with open(out_path, "w", encoding="utf-8") as handle:
         handle.write(text)
-    digest = hashlib.sha256(text.encode("utf-8")).hexdigest()
+    digest = sha256(text.encode("utf-8")).hexdigest()
     print("candidate %d of %d, score %d" % (index + 1, len(CANDIDATES), total))
     print("entry: %s" % text)
     print("sha256: %s" % digest)
     return 0
 
 
-if __name__ == "__main__":
-    raise SystemExit(main())
+finish(run())
