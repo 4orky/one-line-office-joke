@@ -6,12 +6,12 @@
 
 One short joke about office life, 200 characters at most. The program writes one line to `/output/entry.txt`:
 
-> I told my manager I'm drowning in work, so he threw me a meeting invite and called it a life raft.
+> I asked IT for a second monitor and got a second ticket number instead.
 
 ## Run it
 
 ```sh
-node main.ts
+python3 main.py
 ```
 
 ---
